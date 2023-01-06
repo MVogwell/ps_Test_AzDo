@@ -1,0 +1,46 @@
+# Starter pipeline for PowerShell
+
+trigger: none
+
+stages:
+- stage: Build
+  pool:
+    name: "VMAgentPool"
+  jobs:
+  - job: Build
+    displayName: "AzDo pipeline test with PowerShell"
+    steps:
+    - task: PowerShell@2
+      inputs:
+        filePath: '$(System.DefaultWorkingDirectory)\Tests\Invoke-UnitTest.ps1'
+        arguments: '-OutputFile "PSTestResults.xml"'
+        errorActionPreference: stop
+        failOnStderr: true
+        pwsh: true
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'NUnit'
+        testResultsFiles: '**/PSTestResults.xml'
+        searchFolder: $(System.DefaultWorkingDirectory)
+        failTaskOnFailedTests: true
+        testRunTitle: 'UnitTests'
+    - task: PowerShell@2
+      inputs:
+        filePath: '$(System.DefaultWorkingDirectory)\Tests\Invoke-ScriptAnalyzerTest.ps1'
+        errorActionPreference: stop
+        failOnStderr: true
+        pwsh: true
+    - task: PowerShell@2
+      inputs:
+        filePath: '$(System.DefaultWorkingDirectory)\ps_Test_AzDo.ps1'
+        arguments: "-sMsg 'This is an azure sMsg'"
+        errorActionPreference: stop
+        failOnStderr: true
+        pwsh: true
+schedules:
+- cron: "0 */1 * * *"
+  displayName: Every hour
+  always: true
+  branches:
+    include:
+    - main
